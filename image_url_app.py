@@ -1,6 +1,6 @@
 import os
 import uuid
-from flask import Flask, request, send_from_directory, abort
+from flask import Flask, request, send_from_directory, abort, render_template
 from werkzeug.security import check_password_hash
 from flask_httpauth import HTTPBasicAuth
 import yaml
@@ -30,7 +30,7 @@ os.makedirs(STORAGE_ROOT, exist_ok=True)
 # HTTP 基本认证验证
 @auth.verify_password
 def verify_password(username, password):
-    return check_password_hash(PASSWORD, password) and username == USERNAME
+    return PASSWORD == password and username == USERNAME
 
 # 上传图片
 @app.route('/upload', methods=['POST'])
@@ -57,6 +57,12 @@ def upload_image():
 @app.route('/images/<filename>', methods=['GET'])
 def get_image(filename):
     return send_from_directory(STORAGE_ROOT, filename)
+
+# 根路由，返回上传页面
+@app.route('/')
+@auth.login_required
+def index():
+    return render_template('upload.html', username=USERNAME, password=PASSWORD)
 
 if __name__ == '__main__':
     app.run(debug=True, port=8094, host="0.0.0.0")  # 生产环境禁用 debug 模式
