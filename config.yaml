@@ -1,0 +1,5 @@
+storage:
+  root_directory: images/  # 图片存储根目录
+auth:
+  username: your_username  # 上传所需的用户名
+  password: your_password  # 上传所需的密码
