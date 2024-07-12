@@ -59,4 +59,4 @@ def get_image(filename):
     return send_from_directory(STORAGE_ROOT, filename)
 
 if __name__ == '__main__':
-    app.run(debug=True)  # 生产环境禁用 debug 模式
+    app.run(debug=True, port=8094, host="0.0.0.0")  # 生产环境禁用 debug 模式
