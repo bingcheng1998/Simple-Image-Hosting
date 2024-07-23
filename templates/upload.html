@@ -1,11 +1,19 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <title>File Manager</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
-        body { font-family: sans-serif; }
-        .tab { overflow: hidden; background-color: #f1f1f1; }
+        body {
+            font-family: sans-serif;
+        }
+
+        .tab {
+            overflow: hidden;
+            background-color: #f1f1f1;
+        }
+
         .tab button {
             background-color: inherit;
             float: left;
@@ -16,9 +24,21 @@
             transition: 0.3s;
             font-size: 17px;
         }
-        .tab button:hover { background-color: #ddd; }
-        .tab button.active { background-color: #ccc; }
-        .tabcontent { display: none; padding: 6px 12px; border-top: none; }
+
+        .tab button:hover {
+            background-color: #ddd;
+        }
+
+        .tab button.active {
+            background-color: #ccc;
+        }
+
+        .tabcontent {
+            display: none;
+            padding: 6px 12px;
+            border-top: none;
+        }
+
         #drop_zone {
             height: 200px;
             border: 2px dashed #ccc;
@@ -28,14 +48,66 @@
             justify-content: center;
             cursor: pointer;
         }
-        #file_list { margin-top: 20px; }
+
+        #file_list {
+            margin-top: 20px;
+        }
+
         .preview {
             max-width: 200px;
             max-height: 200px;
             margin-top: 10px;
         }
+
+        #file_list {
+            margin-top: 20px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .file-item {
+            border: 1px solid #ddd;
+            padding: 10px;
+            border-radius: 5px;
+        }
+
+        .file-preview {
+            max-width: 100%;
+            max-height: 200px;
+            margin-bottom: 10px;
+        }
+
+        .file-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .file-info a {
+            color: blue;
+        }
+
+        /* Style file link */
+        .file-actions {
+            display: flex;
+            gap: 5px;
+        }
+
+        .file-actions button {
+            background-color: #eee;
+            border: none;
+            padding: 5px 10px;
+            cursor: pointer;
+            border-radius: 3px;
+        }
+
+        .file-actions button:hover {
+            background-color: #ddd;
+        }
     </style>
 </head>
+
 <body>
     <div class="tab">
         <button class="tablinks active" onclick="openTab(event, 'uploadTab')">Upload</button>
@@ -44,7 +116,7 @@
 
     <div id="uploadTab" class="tabcontent" style="display: block;">
         <div id="drop_zone">Drop files here or click to select files</div>
-        <input type="file" id="file_input" style="display: none;" multiple>
+        <input type="file" id="file_input" style="display: none;" multiple />
         <div id="file_list"></div>
     </div>
 
@@ -74,9 +146,12 @@
         const fileInput = document.getElementById('file_input');
         const fileList = document.getElementById('file_list');
 
+        // Enhanced Drag and Drop handling
         ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
             dropZone.addEventListener(eventName, preventDefaults, false);
+            document.body.addEventListener(eventName, preventDefaults, false); // Apply to body
         });
+
         function preventDefaults(e) {
             e.preventDefault();
             e.stopPropagation();
@@ -86,8 +161,7 @@
         fileInput.addEventListener('change', handleFiles, false);
         dropZone.addEventListener('click', () => fileInput.click());
 
-        function handleFiles() {
-            const files = fileInput.files;
+        function handleFiles(files) {
             for (let i = 0; i < files.length; i++) {
                 uploadFile(files[i]);
             }
@@ -96,23 +170,21 @@
         function handleDrop(e) {
             let dt = e.dataTransfer;
             let files = dt.files;
+
             handleFiles(files);
         }
 
         function uploadFile(file) {
             let formData = new FormData();
             formData.append('file', file);
-            fetch('/upload', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                let fileUrl = '/files/' + data.id;
-                let preview = (file.type.startsWith('image/')) ? `<img src="${fileUrl}" class="preview">` : '';
-                fileList.innerHTML += `<p><a href="${fileUrl}" target="_blank">${file.name}</a> ${preview}</p>`;
-            })
-            .catch(error => console.error('Error:', error));
+            fetch('/upload', { method: 'POST', body: formData })
+                .then(response => response.json())
+                .then(data => {
+                    const currentUrl = window.location.href;
+                    let fileUrl = currentUrl + '/files/' + data.id;
+                    displayFile(file, fileUrl);
+                })
+                .catch(error => console.error('Error:', error));
         }
 
         function fetchLocal() {
@@ -123,6 +195,67 @@
                     document.getElementById("localContent").innerHTML = data;
                 });
         }
+
+        function displayFile(file, fileUrl) {
+            let fileItem = document.createElement('div');
+            fileItem.classList.add('file-item');
+
+            // Preview (images, videos, audio)
+            let preview = '';
+            if (file.type.startsWith('image/')) {
+                preview = `<img src="${fileUrl}" class="file-preview" alt="${file.name}">`;
+            } else if (file.type.startsWith('video/')) {
+                preview = `<video controls width="100%" class="file-preview"><source src="${fileUrl}" type="${file.type}"></video>`;
+            } else if (file.type.startsWith('audio/')) {
+                preview = `<audio controls class="file-preview"><source src="${fileUrl}" type="${file.type}"></audio>`;
+            }
+
+            // File info
+            let fileInfo = `
+                <div class="file-info">
+                    <a href="${fileUrl}" target="_blank">${file.name}</a>
+                    <div class="file-actions">
+                        <button onclick="copyLink('${fileUrl}')">Copy Link</button>
+                        <button onclick="showCode('${fileUrl}', '${file.type}')">Show Code</button>
+                    </div>
+                </div>
+            `;
+
+            fileItem.innerHTML = preview + fileInfo;
+            fileList.appendChild(fileItem);
+        }
+
+        async function copyLink(url) {
+            try {
+                await navigator.clipboard.writeText(url);
+                alert("Link copied to clipboard!");
+            } catch (error) {
+                // Fallback method if Clipboard API is unavailable or fails
+                const tempInput = document.createElement("input");
+                tempInput.value = url;
+                document.body.appendChild(tempInput);
+                tempInput.select();
+                document.execCommand("copy");
+                document.body.removeChild(tempInput);
+                alert(`Link copied to clipboard (${url})!`);
+            }
+        }
+
+        function showCode(url, type) {
+            let code = '';
+            if (type.startsWith('image/')) {
+                code = `![Image](${url})`;
+            } else if (type.startsWith('video/')) {
+                code = `<video controls width="100%"><source src="${url}" type="${type}"></video>`;
+            } else if (type.startsWith('audio/')) {
+                code = `<audio controls><source src="${url}" type="${type}"></audio>`;
+            } else { // For other file types, show a link
+                code = `[Download File](${url})`;
+            }
+            alert(code);
+        }
+
     </script>
 </body>
+
 </html>

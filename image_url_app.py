@@ -63,7 +63,15 @@ def upload_file():
         abort(400, 'No selected file')
 
     ext = file.filename.rsplit('.', 1)[-1].lower()
-    if ext not in ('mp3', 'mp4', 'png', 'jpeg', 'jpg'):
+    supported_types = (
+        # 视频
+        'mp4', 'mov', 'avi', 'mkv', 'wmv', 'flv', 'webm', 'mpeg', 'mpg', 'm4v', '3gp',
+        # 音频
+        'mp3', 'wav', 'ogg', 'flac', 'aac', 'm4a', 'wma',
+        # 图片
+        'png', 'jpeg', 'jpg', 'gif', 'webp', 'bmp', 'tiff', 'svg',
+    )
+    if ext.lower() not in supported_types:  # 转换为小写进行比较
         abort(400, 'Unsupported file type')
 
     filename = encode_filename(file.filename)  # Encode filename before saving
@@ -77,7 +85,7 @@ def upload_file():
 def get_file(filename):
     filepath, ext = get_storage_path(filename)
     return send_from_directory(os.path.dirname(filepath), os.path.basename(filepath), 
-            download_name=f'{datetime.now().strftime("%Y-%m-%d-%H:%M:%S")}.{ext}')
+            download_name=f'{datetime.now().strftime("%Y-%m-%d-%H_%M_%S")}.{ext}')
 
 @app.route('/local_proxy/<path:url>')
 def local_proxy(url):
@@ -94,9 +102,4 @@ def index():
     return render_template('upload.html', username=USERNAME, password=PASSWORD)
 
 if __name__ == '__main__':
-    filename = 'that.mp3'
-    enc = encode_filename(filename)
-    print("enc", enc)
-    dec = decode_filename(enc)
-    print('dec', dec)
     app.run(debug=True, port=8094, host="0.0.0.0")
