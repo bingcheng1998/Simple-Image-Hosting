@@ -184,7 +184,10 @@
                     let fileUrl = currentUrl + '/files/' + data.id;
                     displayFile(file, fileUrl);
                 })
-                .catch(error => console.error('Error:', error));
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert("文件类型不支持，仅支持上传常见的音频、视频、图片类型");
+                });
         }
 
         function fetchLocal() {
@@ -213,10 +216,10 @@
             // File info
             let fileInfo = `
                 <div class="file-info">
-                    <a href="${fileUrl}" target="_blank">${file.name}</a>
+                    <a href="${fileUrl}" target="_blank" style="display:none;">${file.name}</a>
                     <div class="file-actions">
                         <button onclick="copyLink('${fileUrl}')">Copy Link</button>
-                        <button onclick="showCode('${fileUrl}', '${file.type}')">Show Code</button>
+                        <button onclick="showCode('${fileUrl}', '${file.type}')">Markdown Code</button>
                     </div>
                 </div>
             `;
@@ -228,7 +231,6 @@
         async function copyLink(url) {
             try {
                 await navigator.clipboard.writeText(url);
-                alert("Link copied to clipboard!");
             } catch (error) {
                 // Fallback method if Clipboard API is unavailable or fails
                 const tempInput = document.createElement("input");
@@ -237,8 +239,8 @@
                 tempInput.select();
                 document.execCommand("copy");
                 document.body.removeChild(tempInput);
-                alert(`Link copied to clipboard (${url})!`);
             }
+            alert(`Copied to clipboard: ${url}`);
         }
 
         function showCode(url, type) {
@@ -252,7 +254,7 @@
             } else { // For other file types, show a link
                 code = `[Download File](${url})`;
             }
-            alert(code);
+            copyLink(code);
         }
 
     </script>

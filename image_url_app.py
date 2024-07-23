@@ -1,12 +1,11 @@
 import os
-import uuid
 import base64
 from datetime import datetime
 from flask import Flask, request, send_from_directory, abort, render_template, Response, stream_with_context
-from werkzeug.security import check_password_hash
 from flask_httpauth import HTTPBasicAuth
 import yaml
 import requests
+import shortuuid
 
 app = Flask(__name__)
 auth = HTTPBasicAuth()
@@ -37,7 +36,8 @@ def encode_filename(filename):
     timestamp = datetime.now().timestamp()  # Use timestamp for encoding
     print('timestamp', timestamp)
     encoded_info = base64.urlsafe_b64encode(f"{timestamp}%{ext}".encode()).decode().rstrip('=')  # Encode timestamp and extension
-    return f"{uuid.uuid4()}.{encoded_info}"
+    short_uuid = shortuuid.uuid() 
+    return f"{short_uuid}.{encoded_info}"
 
 def decode_filename(encoded_filename):
     parts = encoded_filename.split('.')
