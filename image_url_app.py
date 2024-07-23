@@ -33,16 +33,16 @@ def verify_password(username, password):
 
 def encode_filename(filename):
     ext = filename.rsplit('.', 1)[-1].lower()
-    timestamp = datetime.now().timestamp()  # Use timestamp for encoding
+    timestamp = datetime.now().timestamp()
     print('timestamp', timestamp)
-    encoded_info = base64.urlsafe_b64encode(f"{timestamp}%{ext}".encode()).decode().rstrip('=')  # Encode timestamp and extension
+    encoded_info = base64.urlsafe_b64encode(f"{timestamp}%{ext}".encode()).decode().rstrip('=')
     short_uuid = shortuuid.uuid() 
     return f"{short_uuid}.{encoded_info}"
 
 def decode_filename(encoded_filename):
     parts = encoded_filename.split('.')
-    encoded_info = parts[-1]  # Extract encoded part
-    decoded_info = base64.urlsafe_b64decode(encoded_info + '==').decode()  # Decode with padding
+    encoded_info = parts[-1]
+    decoded_info = base64.urlsafe_b64decode(encoded_info + '==').decode()
     print('decoded_info', decoded_info)
     timestamp, ext = decoded_info.split('%')
     date_str = datetime.fromtimestamp(float(timestamp)).strftime("%Y-%m-%d")
@@ -71,10 +71,10 @@ def upload_file():
         # 图片
         'png', 'jpeg', 'jpg', 'gif', 'webp', 'bmp', 'tiff', 'svg',
     )
-    if ext.lower() not in supported_types:  # 转换为小写进行比较
+    if ext.lower() not in supported_types:
         abort(400, 'Unsupported file type')
 
-    filename = encode_filename(file.filename)  # Encode filename before saving
+    filename = encode_filename(file.filename)
     filepath, _ = get_storage_path(filename)
     os.makedirs(os.path.dirname(filepath), exist_ok=True)
     file.save(filepath)
@@ -88,6 +88,7 @@ def get_file(filename):
             download_name=f'{datetime.now().strftime("%Y-%m-%d-%H_%M_%S")}.{ext}')
 
 @app.route('/local_proxy/<path:url>')
+@auth.login_required
 def local_proxy(url):
     try:
         response = requests.get(url, stream=True)
