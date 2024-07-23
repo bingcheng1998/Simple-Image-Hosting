@@ -2,3 +2,5 @@ config.user.yaml
 restart.sh
 app.log
 images/
+.DS_Store
+files_temp/

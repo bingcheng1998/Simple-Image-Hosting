@@ -1,99 +1,128 @@
 <!DOCTYPE html>
 <html>
-
 <head>
-    <title>图片上传</title>
+    <title>File Manager</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
-        body {
-            font-family: sans-serif;
-            text-align: center;
-            padding: 20px;
+        body { font-family: sans-serif; }
+        .tab { overflow: hidden; background-color: #f1f1f1; }
+        .tab button {
+            background-color: inherit;
+            float: left;
+            border: none;
+            outline: none;
+            cursor: pointer;
+            padding: 14px 16px;
+            transition: 0.3s;
+            font-size: 17px;
         }
-
+        .tab button:hover { background-color: #ddd; }
+        .tab button.active { background-color: #ccc; }
+        .tabcontent { display: none; padding: 6px 12px; border-top: none; }
         #drop_zone {
+            height: 200px;
             border: 2px dashed #ccc;
-            padding: 50px;
-            margin: 20px auto;
-            max-width: 600px;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
         }
-
-        #drop_zone.hover {
-            border-color: #007bff;
-        }
-
-        #file_input {
-            display: none;
-        }
-
-        #result {
-            margin-top: 20px;
-        }
-
-        #result img {
-            max-width: 100%;
-        }
-
-        #result input {
-            width: 100%;
-            padding: 10px;
-            box-sizing: border-box;
-        }
-
-        @media (max-width: 600px) {
-            #drop_zone {
-                padding: 20px;
-            }
+        #file_list { margin-top: 20px; }
+        .preview {
+            max-width: 200px;
+            max-height: 200px;
+            margin-top: 10px;
         }
     </style>
 </head>
-
 <body>
-    <h1>图片上传</h1>
-    <div id="drop_zone">
-        拖拽图片到这里或点击上传
-        <input type="file" id="file_input" accept="image/*">
+    <div class="tab">
+        <button class="tablinks active" onclick="openTab(event, 'uploadTab')">Upload</button>
+        <button class="tablinks" onclick="openTab(event, 'proxyTab')">Local Proxy</button>
     </div>
-    <div id="result"></div>
+
+    <div id="uploadTab" class="tabcontent" style="display: block;">
+        <div id="drop_zone">Drop files here or click to select files</div>
+        <input type="file" id="file_input" style="display: none;" multiple>
+        <div id="file_list"></div>
+    </div>
+
+    <div id="proxyTab" class="tabcontent">
+        <p>Enter local URL:</p>
+        <input type="text" id="localUrl" size="50">
+        <button onclick="fetchLocal()">Fetch</button>
+        <div id="localContent"></div>
+    </div>
 
     <script>
+        function openTab(evt, tabName) {
+            let i, tabcontent, tablinks;
+            tabcontent = document.getElementsByClassName("tabcontent");
+            for (i = 0; i < tabcontent.length; i++) {
+                tabcontent[i].style.display = "none";
+            }
+            tablinks = document.getElementsByClassName("tablinks");
+            for (i = 0; i < tablinks.length; i++) {
+                tablinks[i].className = tablinks[i].className.replace(" active", "");
+            }
+            document.getElementById(tabName).style.display = "block";
+            evt.currentTarget.className += " active";
+        }
+
         const dropZone = document.getElementById('drop_zone');
         const fileInput = document.getElementById('file_input');
-        const result = document.getElementById('result');
+        const fileList = document.getElementById('file_list');
 
-        // 拖拽处理
         ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
             dropZone.addEventListener(eventName, preventDefaults, false);
         });
-        function preventDefaults(e) { e.preventDefault(); e.stopPropagation(); }
-        dropZone.addEventListener('dragenter', () => dropZone.classList.add('hover'));
-        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('hover'));
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
         dropZone.addEventListener('drop', handleDrop, false);
+        fileInput.addEventListener('change', handleFiles, false);
+        dropZone.addEventListener('click', () => fileInput.click());
+
+        function handleFiles() {
+            const files = fileInput.files;
+            for (let i = 0; i < files.length; i++) {
+                uploadFile(files[i]);
+            }
+        }
+
         function handleDrop(e) {
-            const dt = e.dataTransfer;
-            const files = dt.files;
+            let dt = e.dataTransfer;
+            let files = dt.files;
             handleFiles(files);
         }
 
-        // 点击上传处理
-        dropZone.addEventListener('click', () => fileInput.click());
-        fileInput.addEventListener('change', () => handleFiles(fileInput.files));
+        function uploadFile(file) {
+            let formData = new FormData();
+            formData.append('file', file);
+            fetch('/upload', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                let fileUrl = '/files/' + data.id;
+                let preview = (file.type.startsWith('image/')) ? `<img src="${fileUrl}" class="preview">` : '';
+                fileList.innerHTML += `<p><a href="${fileUrl}" target="_blank">${file.name}</a> ${preview}</p>`;
+            })
+            .catch(error => console.error('Error:', error));
+        }
 
-        // 上传图片
-        function handleFiles(files) {
-            const formData = new FormData();
-            formData.append('file', files[0]);
-            fetch('/upload', { method: 'POST', body: formData, headers: { 'Authorization': 'Basic ' + btoa('{{ username }}:{{ password }}') } })
-                .then(response => response.json())
+        function fetchLocal() {
+            let url = document.getElementById("localUrl").value;
+            fetch('/local_proxy/' + url)
+                .then(response => response.text())
                 .then(data => {
-                    result.innerHTML = `
-                        <input type="text" value="${window.location.origin}/images/${data.id}" readonly>
-                        <img src="/images/${data.id}">
-                    `;
-                })
-                .catch(error => console.error('Error:', error));
+                    document.getElementById("localContent").innerHTML = data;
+                });
         }
     </script>
 </body>
-
 </html>
